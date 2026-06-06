@@ -1,0 +1,6 @@
+.build/
+.DS_Store
+VideoLoop.app/
+VideoLoop*.zip
+vendor/
+AppIcon.icns
