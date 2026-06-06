@@ -12,6 +12,25 @@
 | **Boomerang** | İleri + geri (ping-pong). Her zaman %100 dikişsiz. |
 | **Swap** | Videoyu ortadan böler, parçaları yer değiştirir, ortada crossfade yapar. |
 
+## Kurulum (Homebrew)
+
+```bash
+brew install --cask neias/tap/videoloop
+```
+
+İlk kez bir tap kullanıyorsan Homebrew güvenlik için onay isteyebilir:
+
+```bash
+brew tap neias/tap
+brew trust neias/tap          # ya da: export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+brew install --cask videoloop
+```
+
+`ffmpeg` bağımlılığı otomatik kurulur. Uygulama ad-hoc imzalı olduğundan cask,
+kurulumdan sonra karantinayı kaldırır (notarize edilmemiştir).
+
+Kaldırma: `brew uninstall --cask videoloop`
+
 ## Gereksinim
 
 Yok — **ffmpeg/ffprobe uygulamanın içine gömülüdür** (universal statik: arm64 + x86_64).
