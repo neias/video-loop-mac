@@ -42,13 +42,15 @@ final class LoopPlayerModel: ObservableObject {
 
 struct LoopPlayerView: View {
     let url: URL
+    let strings: Strings
     var onClose: () -> Void
 
     @StateObject private var model: LoopPlayerModel
     private let accent = Color(red: 0.45, green: 0.36, blue: 0.96)
 
-    init(url: URL, onClose: @escaping () -> Void) {
+    init(url: URL, strings: Strings, onClose: @escaping () -> Void) {
         self.url = url
+        self.strings = strings
         self.onClose = onClose
         _model = StateObject(wrappedValue: LoopPlayerModel(url: url))
     }
@@ -63,7 +65,7 @@ struct LoopPlayerView: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Spacer()
-                Text("döngüde")
+                Text(strings.loopingBadge)
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                 Button {
@@ -81,16 +83,16 @@ struct LoopPlayerView: View {
                 .frame(minWidth: 480, minHeight: 320)
 
             HStack(spacing: 10) {
-                Button("Finder'da Göster") {
+                Button(strings.revealFinder) {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
                 }
                 .buttonStyle(.borderless)
-                Button("Varsayılan Oynatıcıda Aç") {
+                Button(strings.openDefault) {
                     NSWorkspace.shared.open(url)
                 }
                 .buttonStyle(.borderless)
                 Spacer()
-                Button("Kapat") {
+                Button(strings.close) {
                     model.stop()
                     onClose()
                 }

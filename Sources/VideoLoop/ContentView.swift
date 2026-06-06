@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var engine = LoopEngine()
+    @StateObject private var loc = Localization()
 
     @State private var inputURL: URL?
     @State private var outputURL: URL?
@@ -13,6 +14,8 @@ struct ContentView: View {
     @State private var showPreview = false
 
     private let accent = Color(red: 0.45, green: 0.36, blue: 0.96)
+
+    private var s: Strings { loc.s }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,7 +36,7 @@ struct ContentView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .sheet(isPresented: $showPreview) {
             if let result = engine.resultURL {
-                LoopPlayerView(url: result) { showPreview = false }
+                LoopPlayerView(url: result, strings: s) { showPreview = false }
             }
         }
     }
@@ -46,14 +49,35 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text("VideoLoop")
                     .font(.system(size: 16, weight: .semibold))
-                Text("Videoyu kusursuz döngüye çevir")
+                Text(s.subtitle)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            languagePicker
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 14)
+    }
+
+    private var languagePicker: some View {
+        Menu {
+            Picker("", selection: $loc.language) {
+                ForEach(AppLanguage.allCases) { lang in
+                    Text(lang.displayName).tag(lang)
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "globe")
+                Text(loc.language.shortLabel)
+            }
+            .font(.system(size: 11, weight: .medium))
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
     }
 
     /// Paketteki logo.png; yoksa SF Symbol'a düşer.
@@ -93,7 +117,7 @@ struct ContentView: View {
                             .truncationMode(.middle)
                     }
                     Spacer()
-                    Button("Değiştir") { pickInput() }
+                    Button(s.change) { pickInput() }
                         .buttonStyle(.borderless)
                 }
                 .padding(16)
@@ -102,9 +126,9 @@ struct ContentView: View {
                     Image(systemName: "arrow.down.doc")
                         .font(.system(size: 30))
                         .foregroundStyle(.secondary)
-                    Text("Videoyu buraya sürükle")
+                    Text(s.dropTitle)
                         .font(.system(size: 13, weight: .medium))
-                    Text("veya tıklayıp seç")
+                    Text(s.dropSubtitle)
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -135,7 +159,7 @@ struct ContentView: View {
 
     private var modeSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("YÖNTEM")
+            Text(s.sectionMethod)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
@@ -164,7 +188,7 @@ struct ContentView: View {
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(accent)
                     }
                 }
-                Text(mode.summary)
+                Text(mode.summary(loc.language))
                     .font(.system(size: 10.5))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.leading)
@@ -188,30 +212,30 @@ struct ContentView: View {
 
     private var optionsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("AYARLAR")
+            Text(s.sectionSettings)
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
 
             if options.mode.usesXfade {
                 sliderRow(
-                    title: options.mode == .auto ? "Geçiş (xfade)" : "Geçiş süresi (xfade)",
+                    title: options.mode == .auto ? s.xfadeAuto : s.xfadeOther,
                     value: $options.xfade, range: 0...3, step: 0.1,
-                    format: "%.1f sn",
-                    hint: options.mode == .auto ? "0 = sert görünmez kesim" : nil
+                    format: s.secondsFormat(),
+                    hint: options.mode == .auto ? s.xfadeHint : nil
                 )
             }
 
             if options.mode == .auto {
                 sliderRow(
-                    title: "En kısa loop",
+                    title: s.minLoop,
                     value: $options.minLoop, range: 0.5...10, step: 0.5,
-                    format: "%.1f sn", hint: nil
+                    format: s.secondsFormat(), hint: nil
                 )
             }
 
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Kalite (CRF)").font(.system(size: 12))
+                    Text(s.quality).font(.system(size: 12))
                     HStack {
                         Slider(value: Binding(
                             get: { Double(options.crf) },
@@ -221,10 +245,10 @@ struct ContentView: View {
                             .font(.system(size: 12, design: .monospaced))
                             .frame(width: 24, alignment: .trailing)
                     }
-                    Text("düşük = daha iyi").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Text(s.qualityHint).font(.system(size: 10)).foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Preset").font(.system(size: 12))
+                    Text(s.preset).font(.system(size: 12))
                     Picker("", selection: $options.preset) {
                         ForEach(LoopOptions.presets, id: \.self) { Text($0).tag($0) }
                     }
@@ -235,8 +259,8 @@ struct ContentView: View {
 
             Toggle(isOn: $options.includeAudio) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Sesi koru").font(.system(size: 12))
-                    Text(options.mode == .auto ? "auto modunda ses her zaman atılır" : "kapalıysa ses atılır")
+                    Text(s.keepAudio).font(.system(size: 12))
+                    Text(options.mode == .auto ? s.keepAudioAuto : s.keepAudioOther)
                         .font(.system(size: 10)).foregroundStyle(.secondary)
                 }
             }
@@ -267,8 +291,8 @@ struct ContentView: View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
             VStack(alignment: .leading, spacing: 2) {
-                Text("ffmpeg bulunamadı").font(.system(size: 12, weight: .medium))
-                Text("Terminalde kurun:  brew install ffmpeg")
+                Text(s.ffmpegMissing).font(.system(size: 12, weight: .medium))
+                Text(s.ffmpegInstall)
                     .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
             }
             Spacer()
@@ -309,17 +333,17 @@ struct ContentView: View {
             if let result = engine.resultURL, !engine.isRunning {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                    Text("Hazır: \(result.lastPathComponent)").font(.system(size: 12, weight: .medium))
+                    Text("\(s.readyPrefix): \(result.lastPathComponent)").font(.system(size: 12, weight: .medium))
                     Spacer()
                     Button {
                         showPreview = true
                     } label: {
-                        Label("İzle", systemImage: "play.circle.fill")
+                        Label(s.watch, systemImage: "play.circle.fill")
                             .font(.system(size: 12, weight: .medium))
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(accent)
-                    Button("Finder'da Göster") { NSWorkspace.shared.activateFileViewerSelecting([result]) }
+                    Button(s.revealFinder) { NSWorkspace.shared.activateFileViewerSelecting([result]) }
                         .buttonStyle(.borderless)
                 }
             }
@@ -328,7 +352,7 @@ struct ContentView: View {
                 Button {
                     showLog.toggle()
                 } label: {
-                    Label("Günlük", systemImage: showLog ? "chevron.down" : "chevron.right")
+                    Label(s.log, systemImage: showLog ? "chevron.down" : "chevron.right")
                         .font(.system(size: 11))
                 }
                 .buttonStyle(.borderless)
@@ -345,7 +369,7 @@ struct ContentView: View {
                         } else {
                             Image(systemName: "infinity")
                         }
-                        Text(engine.isRunning ? "Oluşturuluyor…" : "Loop Oluştur")
+                        Text(engine.isRunning ? s.creating : s.createLoop)
                             .font(.system(size: 13, weight: .semibold))
                     }
                     .frame(minWidth: 140)
@@ -376,6 +400,7 @@ struct ContentView: View {
 
     private func pickInput() {
         let panel = NSOpenPanel()
+        panel.message = s.chooseVideoTitle
         panel.allowedContentTypes = [.movie, .video, .mpeg4Movie, .quickTimeMovie]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false

@@ -18,16 +18,24 @@ enum LoopMode: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var summary: String {
-        switch self {
-        case .auto:
+    func summary(_ lang: AppLanguage) -> String {
+        switch (self, lang) {
+        case (.auto, .tr):
             return "Kareleri analiz edip en çok benzeyen başlangıç/bitiş çiftini bulur ve oradan keser. Görünmez sert kesim."
-        case .crossfade:
+        case (.auto, .en):
+            return "Analyzes frames, finds the most similar start/end pair and cuts there. Invisible hard cut."
+        case (.crossfade, .tr):
             return "Videonun sonunu başına eritir (tek geçişli xfade)."
-        case .boomerang:
+        case (.crossfade, .en):
+            return "Dissolves the end of the video into its beginning (single-pass xfade)."
+        case (.boomerang, .tr):
             return "İleri + geri (ping-pong). Her zaman %100 dikişsiz."
-        case .swap:
+        case (.boomerang, .en):
+            return "Forward + reverse (ping-pong). Always 100% seamless."
+        case (.swap, .tr):
             return "Videoyu ortadan böler, parçaları yer değiştirir, ortada crossfade yapar."
+        case (.swap, .en):
+            return "Splits the video in the middle, swaps the halves and crossfades at the seam."
         }
     }
 
