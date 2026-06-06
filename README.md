@@ -1,97 +1,106 @@
 # VideoLoop (SwiftUI)
 
-`videoloop.py` aracının yerel macOS SwiftUI uygulaması. Bir videoyu kusursuz
-(seamless) döngüye çevirir. Arka planda sistemdeki **ffmpeg / ffprobe** kullanılır.
+A native macOS SwiftUI app — the GUI port of the `videoloop.py` tool — that turns
+a video into a seamless loop. It drives **ffmpeg / ffprobe** under the hood.
 
-## Modlar
+## Modes
 
-| Mod | Açıklama |
-|-----|----------|
-| **Auto** | Kareleri (32×18 gri) analiz edip en çok benzeyen başlangıç/bitiş çiftini bulur ve oradan keser. Görünmez sert kesim. |
-| **Crossfade** | Videonun sonunu başına eritir (tek geçişli `xfade` + `acrossfade`). |
-| **Boomerang** | İleri + geri (ping-pong). Her zaman %100 dikişsiz. |
-| **Swap** | Videoyu ortadan böler, parçaları yer değiştirir, ortada crossfade yapar. |
+| Mode | Description |
+|------|-------------|
+| **Auto** | Analyzes frames (32×18 grayscale), finds the most similar start/end pair and cuts there. Invisible hard cut. |
+| **Crossfade** | Dissolves the end of the video into its beginning (single-pass `xfade` + `acrossfade`). |
+| **Boomerang** | Forward + reverse (ping-pong). Always 100% seamless. |
+| **Swap** | Splits the video in the middle, swaps the halves, and crossfades at the seam. |
 
-## Kurulum (Homebrew)
+## Install (Homebrew)
 
 ```bash
 brew install --cask neias/tap/videoloop
 ```
 
-İlk kez bir tap kullanıyorsan Homebrew güvenlik için onay isteyebilir:
+If this is your first time using a third-party tap, Homebrew may ask you to trust it:
 
 ```bash
 brew tap neias/tap
-brew trust neias/tap          # ya da: export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
+brew trust neias/tap          # or: export HOMEBREW_NO_REQUIRE_TAP_TRUST=1
 brew install --cask videoloop
 ```
 
-`ffmpeg` bağımlılığı otomatik kurulur. Uygulama ad-hoc imzalı olduğundan cask,
-kurulumdan sonra karantinayı kaldırır (notarize edilmemiştir).
+The `ffmpeg` dependency is installed automatically. The app is ad-hoc signed
+(not notarized), so the cask removes the quarantine flag after install.
 
-Kaldırma: `brew uninstall --cask videoloop`
+Uninstall: `brew uninstall --cask videoloop`
 
-## Gereksinim
+## Requirements
 
-Yok — **ffmpeg/ffprobe uygulamanın içine gömülüdür** (universal statik: arm64 + x86_64).
-Başka bir Mac'te kurulum gerektirmeden çalışır. (Geliştirme sırasında gömülü
-ikili yoksa sistemdeki `brew install ffmpeg`'e düşer.)
+None for the Homebrew install — `ffmpeg` is pulled in as a dependency.
 
-## Derleme & Çalıştırma
+For a **standalone** build, ffmpeg/ffprobe can be embedded inside the app bundle
+(universal static: arm64 + x86_64), so it runs on any Mac with no install. During
+development, if no embedded binary is present it falls back to the system
+`brew install ffmpeg`.
 
-```bash
-./fetch-ffmpeg.sh   # statik ffmpeg/ffprobe indir + universal yap (bir kez)
-./build.sh          # VideoLoop.app paketini üretir (ikilileri gömer)
-open VideoLoop.app  # ya da Finder'dan çift tıkla
-```
-
-`vendor/ffmpeg` zaten varsa `fetch-ffmpeg.sh`'ı atlayabilirsin.
-
-## Başka bir Mac'e dağıtım
-
-`VideoLoop.app`'i sıkıştırıp gönder:
+## Build & Run
 
 ```bash
-ditto -c -k --keepParent VideoLoop.app VideoLoop.zip
+./fetch-ffmpeg.sh   # download static ffmpeg/ffprobe + make universal (once, optional)
+./build.sh          # produce VideoLoop.app (embeds the binaries if vendor/ exists)
+open VideoLoop.app  # or double-click in Finder
 ```
 
-Uygulama **ad-hoc** imzalı (Apple Developer ile notarize edilmemiş) olduğundan,
-karşı Mac'te ilk açılışta Gatekeeper uyarı verir. Çözüm (alıcı tarafında):
+Build a lean app that relies on system/Homebrew ffmpeg instead of embedding:
 
-- **Sağ tık → Aç** → "Aç" (bir kez), ya da
-- Terminalde karantinayı kaldır: `xattr -dr com.apple.quarantine VideoLoop.app`
+```bash
+EMBED_FFMPEG=0 ./build.sh
+```
 
-> Boyut ~253 MB (iki universal ikili). Sadece Apple Silicon hedefliyorsan
-> `vendor/` içindekileri `lipo -thin arm64` ile inceltip yarıya düşürebilirsin.
-
-Geliştirme sırasında doğrudan:
+During development you can also run directly:
 
 ```bash
 swift run
 ```
 
-## Kullanım
+## Distributing to another Mac (standalone)
 
-1. Videoyu pencereye **sürükle-bırak** ya da tıklayıp seç.
-2. Yöntemi ve ayarları (xfade, en kısa loop, CRF, preset, ses) belirle.
-3. **Loop Oluştur** → çıktı konumunu seç → ilerleme çubuğunu izle.
-4. Bittiğinde **Finder'da Göster** / **Aç**.
+Zip the app and send it:
 
-## Ayarlar
+```bash
+ditto -c -k --keepParent VideoLoop.app VideoLoop.zip
+```
 
-- **xfade** — geçiş süresi (sn). Auto için 0 = sert görünmez kesim.
-- **En kısa loop** — auto modunda minimum döngü uzunluğu.
-- **CRF** — x264 kalite (düşük = daha iyi, varsayılan 18).
-- **Preset** — x264 hız/sıkıştırma dengesi.
-- **Sesi koru** — kapalıysa ses atılır. Auto modunda ses her zaman atılır.
+Because the app is **ad-hoc** signed (not notarized by an Apple Developer
+account), Gatekeeper will warn on first launch on the other Mac. On the
+recipient's side:
 
-## Mimari
+- **Right-click → Open** → "Open" (once), or
+- Remove the quarantine flag: `xattr -dr com.apple.quarantine VideoLoop.app`
 
-| Dosya | Sorumluluk |
-|-------|-----------|
-| `LoopMode.swift` | Mod/parametre/`VideoInfo` modelleri |
-| `FFmpegTools.swift` | ffmpeg-ffprobe konum bulma, process çalıştırma, ilerleme parse |
-| `Looper.swift` | `probe`, kare-benzerliği analizi, dört mod kurucu |
-| `LoopEngine.swift` | UI ↔ worker köprüsü (`ObservableObject`) |
-| `ContentView.swift` | SwiftUI arayüz |
-| `VideoLoopApp.swift` | Uygulama girişi |
+> A standalone app is ~253 MB (two universal binaries). If you only target Apple
+> Silicon, thin the `vendor/` binaries with `lipo -thin arm64` to roughly halve it.
+
+## Usage
+
+1. **Drag & drop** a video onto the window, or click to choose one.
+2. Pick a mode and settings (xfade, min loop, CRF, preset, audio).
+3. **Create Loop** → choose the output location → watch the progress bar.
+4. When done, **Watch** the result (looping preview) or reveal it in Finder.
+
+## Settings
+
+- **xfade** — transition duration (s). For Auto, 0 = hard invisible cut.
+- **Min loop** — minimum loop length in Auto mode.
+- **CRF** — x264 quality (lower = better, default 18).
+- **Preset** — x264 speed/compression trade-off.
+- **Keep audio** — when off, audio is dropped. Auto mode always drops audio.
+
+## Architecture
+
+| File | Responsibility |
+|------|----------------|
+| `LoopMode.swift` | Mode / options / `VideoInfo` models |
+| `FFmpegTools.swift` | Locating ffmpeg-ffprobe, running processes, progress parsing |
+| `Looper.swift` | `probe`, frame-similarity analysis, the four mode builders |
+| `LoopEngine.swift` | UI ↔ worker bridge (`ObservableObject`) |
+| `ContentView.swift` | SwiftUI interface |
+| `LoopPlayerView.swift` | Looping AVKit preview of the result |
+| `VideoLoopApp.swift` | App entry point |
