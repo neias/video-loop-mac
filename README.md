@@ -3,6 +3,8 @@
 A native macOS SwiftUI app — the GUI port of the `videoloop.py` tool — that turns
 a video into a seamless loop. It drives **ffmpeg / ffprobe** under the hood.
 
+**Website:** https://time-travel-stuff.emreacar.tr/videoloop.html
+
 ![VideoLoop screenshot](docs/screenshot.png)
 
 ## Modes
